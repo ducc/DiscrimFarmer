@@ -54,7 +54,7 @@ func findUsername(dg *discordgo.Session) (string, error) {
 }
 
 func populateGuildMembers(dg *discordgo.Session) {
-	guilds, err := dg.UserGuilds()
+	guilds, err := dg.UserGuilds(100, "", "")
 	if err != nil {
 		log.WithError(err).Fatal("Error getting user guilds")
 		return
