@@ -1,25 +1,36 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/bwmarrin/discordgo"
+	"net/http"
 	"strings"
 	"time"
 )
 
+type apiResponse struct {
+	Responses []struct {
+		Username string `json:"username"`
+	} `json:"response"`
+}
+
 var (
-	errorNoUsernames = errors.New("No usernames found for current discrim")
-	discrims         []string
-	token, password  string
+	errorNoUsernames                 = errors.New("No usernames found for current discrim")
+	discrims                         []string
+	defaultUsername, token, password string
+	api                              bool
 )
 
 func init() {
 	discrims = strings.Split(*flag.String("d", "", "discrims comma seperated"), ",")
+	flag.StringVar(&defaultUsername, "u", "", "discord username")
 	flag.StringVar(&token, "t", "", "discord token")
 	flag.StringVar(&password, "p", "", "discord password")
+	flag.BoolVar(&api, "api", false, "use api.pandentia.cf")
 	flag.Parse()
 }
 
@@ -51,6 +62,26 @@ func findUsername(dg *discordgo.Session) (string, error) {
 		}
 	}
 	return "", errorNoUsernames
+}
+
+func findUsernameWithAPI(dg *discordgo.Session) (string, error) {
+	me, err := dg.User("@me")
+	if err != nil {
+		return "", err
+	}
+	resp, err := http.Get("https://api.pandentia.cf/discord/users/discriminator/" + me.Discriminator)
+	if err != nil {
+		return "", err
+	}
+	var ar apiResponse
+	err = json.NewDecoder(resp.Body).Decode(&ar)
+	if err != nil {
+		return "", err
+	}
+	if len(ar.Responses) == 0 {
+		return "", errors.New("aaaa no discrims WTF!!")
+	}
+	return ar.Responses[0].Username, nil
 }
 
 func populateGuildMembers(dg *discordgo.Session) {
@@ -99,18 +130,33 @@ func main() {
 		return
 	}
 	log.WithField("user", fmt.Sprintf("%s#%s (%s)", u.Username, u.Discriminator, u.ID)).Info("Started!")
-	populateGuildMembers(dg)
+	if !api {
+		populateGuildMembers(dg)
+	}
 	var first = true
 	for {
 		if !first {
-			time.Sleep(time.Minute * 30)
+			if len(defaultUsername) > 0 {
+				time.Sleep(time.Minute * 60)
+			} else {
+				time.Sleep(time.Minute * 30)
+			}
 		} else {
 			first = false
 		}
-		username, err := findUsername(dg)
-		if err != nil {
-			log.WithError(err).Fatal("Error finding new username")
-			return
+		var username string
+		if api {
+			username, err = findUsernameWithAPI(dg)
+			if err != nil {
+				log.WithError(err).Fatal("Error finding new username")
+				return
+			}
+		} else {
+			username, err = findUsername(dg)
+			if err != nil {
+				log.WithError(err).Fatal("Error finding new username")
+				return
+			}
 		}
 		u, err := dg.UserUpdate("", password, username, "", "")
 		if err != nil {
@@ -124,6 +170,13 @@ func main() {
 		if isGoodDiscrim(u.Discriminator) {
 			log.Info("Found sweet mf discrim")
 			break
+		}
+		if len(defaultUsername) > 0 {
+			_, err := dg.UserUpdate("", password, defaultUsername, "", "")
+			if err != nil {
+				log.WithError(err).Warn("Error updating user")
+				continue
+			}
 		}
 	}
 	log.Info("Finished discrim farming!")
