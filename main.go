@@ -81,7 +81,12 @@ func findUsernameWithAPI(dg *discordgo.Session) (string, error) {
 	if len(ar.Responses) == 0 {
 		return "", errors.New("aaaa no discrims WTF!!")
 	}
-	return ar.Responses[0].Username, nil
+	for _, res := range ar.Responses {
+		if res.Username != me.Username {
+			return res.Username, nil
+		}
+	}
+	return "", errors.New("yep lol only username is your username lol")
 }
 
 func populateGuildMembers(dg *discordgo.Session) {
@@ -122,11 +127,6 @@ func main() {
 	u, err := dg.User("@me")
 	if err != nil {
 		log.WithError(err).Fatal("Error getting user details")
-		return
-	}
-	err = dg.Open()
-	if err != nil {
-		log.WithError(err).Fatal("Error opening connection")
 		return
 	}
 	log.WithField("user", fmt.Sprintf("%s#%s (%s)", u.Username, u.Discriminator, u.ID)).Info("Started!")
