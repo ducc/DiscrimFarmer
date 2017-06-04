@@ -9,3 +9,6 @@ Changes your discord username to the username of other people to force your disc
 1. Wait for a sweet discrim! Use `ctrl+c` to stop it running.
 
 `<target discrims>` = list of discriminators separated by a comma, e.g. `1234,1337,0001`.
+
+If you want, this tool can search for other members with the same discriminator using an api, rather than looking at the members who are on the same servers as you.
+To do so, just add the flag `-api true` when running `./DiscrimFarmer`
