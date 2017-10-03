@@ -1,4 +1,4 @@
-# DiscrimFarmer
+# DiscriminialFarmer
 Changes your discord username to the username of other people to force your discriminator to change, then stops once it hits the target number(s).
 
 ![a note from the discord team](https://owo.whats-th.is/2a0e5d.png)
