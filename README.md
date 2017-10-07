@@ -1,3 +1,5 @@
+# THIS PROJECT IS NO LONGER SUPPORTED. DISCORD WILL BAN YOU FOR USING IT.
+
 # DiscrimFarmer
 Changes your discord username to the username of other people to force your discriminator to change, then stops once it hits the target number(s).
 
